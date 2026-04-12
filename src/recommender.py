@@ -4,10 +4,7 @@ import csv
 
 @dataclass
 class Song:
-    """
-    Represents a song and its attributes.
-    Required by tests/test_recommender.py
-    """
+    """Represents a song and its attributes."""
     id: int
     title: str
     artist: str
@@ -21,36 +18,29 @@ class Song:
 
 @dataclass
 class UserProfile:
-    """
-    Represents a user's taste preferences.
-    Required by tests/test_recommender.py
-    """
+    """Represents a user's taste preferences."""
     favorite_genre: str
     favorite_mood: str
     target_energy: float
     likes_acoustic: bool
 
 class Recommender:
-    """
-    OOP implementation of the recommendation logic.
-    Required by tests/test_recommender.py
-    """
+    """Implements recommendation logic with an object-oriented interface."""
     def __init__(self, songs: List[Song]):
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
+        """Returns up to k recommended songs for a user profile."""
         # TODO: Implement recommendation logic
         return self.songs[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
+        """Returns a human-readable explanation for a recommendation."""
         # TODO: Implement explanation logic
         return "Explanation placeholder"
 
 def load_songs(csv_path: str) -> List[Dict]:
-    """
-    Loads songs from a CSV file.
-    Required by src/main.py
-    """
+    """Loads songs from a CSV file into typed dictionaries."""
     songs: List[Dict] = []
     int_fields = {"id"}
     float_fields = {"energy", "tempo_bpm", "valence", "danceability", "acousticness"}
@@ -71,10 +61,7 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """
-    Scores a single song against user preferences.
-    Required by recommend_songs() and src/main.py
-    """
+    """Computes a recommendation score and explanation reasons for one song."""
     # Support either singular or plural preference keys.
     favorite_genres = user_prefs.get("favorite_genres", user_prefs.get("genre", []))
     favorite_moods = user_prefs.get("favorite_moods", user_prefs.get("mood", []))
@@ -158,10 +145,7 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     return final_score, reasons
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
-    """
-    Functional implementation of the recommendation logic.
-    Required by src/main.py
-    """
+    """Scores, sorts, and returns the top-k song recommendations."""
     if k <= 0:
         return []
 
