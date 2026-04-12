@@ -17,14 +17,33 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
-
 In real-world music apps, recommendation systems combine many signals (your listens, skips, likes, session context, and behavior from similar users), then rank results with additional goals like diversity, freshness, and business constraints. This project is intentionally simpler, so your version should prioritize clear, explainable matching to a user's stated preferences (for example genre, mood, and feature closeness) and produce recommendations you can justify step by step.
 
 - Each `Song` uses both categorical and numeric features: `genre`, `mood`, `energy`, `valence`, `danceability`, `tempo_bpm`, and `acousticness`. `id`, `title`, and `artist` are metadata for display and debugging, not primary matching signals.
-- The `UserProfile` stores preferred `genre`, preferred `mood`, a target `energy` level (0 to 1), and an acoustic preference (`likes_acoustic`) so the model can reward songs close to the user's preference shape instead of always favoring high or low values.
-- The recommender combines: (1) categorical match points for `genre` and `mood`, and (2) numeric closeness penalties based on distance from user targets (for example, `1 - abs(song_energy - target_energy)`). This creates a relevance score where songs closest to the user's desired profile rank highest.
-- After scoring every song, the system sorts by score in descending order and returns the top `k` songs. In ties, it can break by stronger genre/mood match first, then by title for stable output.
+- The `UserProfile` stores preferred genres/moods plus target numeric values (energy, valence, danceability, acousticness, and tempo).
+
+### Algorithm Recipe (Finalized)
+
+1. Input user preferences:
+   - `favorite_genres`, `favorite_moods`
+   - Numeric targets: `target_energy`, `target_valence`, `target_danceability`, `target_acousticness`, `target_tempo_bpm`
+2. For each song in `data/songs.csv`, compute a categorical score:
+   - `genre_match` weight = `0.55`
+   - `mood_match` weight = `0.45`
+   - Normalize categorical score to `0..1`
+3. Compute numeric closeness score using:
+   - `closeness = max(0, 1 - abs(song_value - target_value) / tolerance)`
+   - Tolerances: energy/valence/danceability/acousticness = `0.50`, tempo = `40 bpm`
+   - Feature weights: energy `0.30`, valence `0.20`, danceability `0.20`, acousticness `0.15`, tempo `0.15`
+4. Blend both parts into one final score:
+   - `final_score = 0.60 * categorical_score + 0.40 * numeric_score`
+5. Rank all songs by `final_score` (highest first) and return top `k`.
+
+### Potential Biases (Expected)
+
+- Genre can still be slightly favored over mood by design (`0.55` vs `0.45`), so songs with correct genre may outrank mood-only matches.
+- The catalog is small and uneven across genres/moods, so popular combinations in the data can appear more often in top results.
+- Numeric targets can favor "middle" songs if tolerances are broad, which may reduce variety at the extremes.
 
 You can include a simple diagram or bullet list if helpful.
 

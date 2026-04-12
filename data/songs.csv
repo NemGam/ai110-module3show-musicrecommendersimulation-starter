@@ -9,3 +9,11 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
 9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
 10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
+11,Afterglow Arcade,Pixel Harbor,synthwave,energetic,0.81,116,0.68,0.84,0.19
+12,Quiet Terminal,Cloud District,ambient,focused,0.31,64,0.52,0.38,0.94
+13,Golden Hour Steps,Juniper Lane,indie pop,happy,0.72,122,0.86,0.80,0.33
+14,Basement Blueprint,Code Current,hip hop,focused,0.66,96,0.58,0.77,0.27
+15,Mountain Static,Iron Pines,rock,moody,0.88,146,0.44,0.63,0.12
+16,Slow Bloom Cafe,Velvet Kettle,jazz,relaxed,0.41,88,0.74,0.57,0.83
+17,Deep Work Drift,LoRoom,lofi,focused,0.39,76,0.55,0.61,0.81
+18,Signal in the Fog,Neon Echo,electronic,moody,0.70,108,0.46,0.75,0.24
