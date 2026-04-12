@@ -97,50 +97,60 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     def closeness(song_value: float, target_value: float, tolerance: float) -> float:
         return max(0.0, 1.0 - abs(song_value - target_value) / tolerance)
 
-    target_energy = float(user_prefs.get("target_energy", user_prefs.get("energy", song.get("energy", 0.0))))
-    target_valence = float(user_prefs.get("target_valence", song.get("valence", 0.0)))
-    target_danceability = float(user_prefs.get("target_danceability", song.get("danceability", 0.0)))
-    target_acousticness = float(user_prefs.get("target_acousticness", song.get("acousticness", 0.0)))
-    target_tempo_bpm = float(user_prefs.get("target_tempo_bpm", song.get("tempo_bpm", 0.0)))
+    numeric_features = [
+        ("energy", ["target_energy", "energy"], 0.50, 0.30, "energy"),
+        ("valence", ["target_valence", "valence"], 0.50, 0.20, "valence"),
+        ("danceability", ["target_danceability", "danceability"], 0.50, 0.20, "danceability"),
+        ("acousticness", ["target_acousticness", "acousticness"], 0.50, 0.15, "acousticness"),
+        ("tempo_bpm", ["target_tempo_bpm", "tempo_bpm"], 40.0, 0.15, "tempo"),
+    ]
 
-    energy_close = closeness(float(song.get("energy", 0.0)), target_energy, 0.50)
-    valence_close = closeness(float(song.get("valence", 0.0)), target_valence, 0.50)
-    danceability_close = closeness(float(song.get("danceability", 0.0)), target_danceability, 0.50)
-    acousticness_close = closeness(float(song.get("acousticness", 0.0)), target_acousticness, 0.50)
-    tempo_close = closeness(float(song.get("tempo_bpm", 0.0)), target_tempo_bpm, 40.0)
+    provided_numeric: List[Tuple[str, float, float, str]] = []
+    for song_key, target_keys, tolerance, weight, label in numeric_features:
+        target_value = None
+        for key in target_keys:
+            if key in user_prefs and user_prefs[key] is not None:
+                target_value = float(user_prefs[key])
+                break
+        if target_value is not None:
+            close = closeness(float(song.get(song_key, 0.0)), target_value, tolerance)
+            provided_numeric.append((label, close, weight, song_key))
 
-    numeric_score = (
-        0.30 * energy_close
-        + 0.20 * valence_close
-        + 0.20 * danceability_close
-        + 0.15 * acousticness_close
-        + 0.15 * tempo_close
-    )
+    numeric_weight_sum = sum(weight for _, _, weight, _ in provided_numeric)
+    numeric_score = 0.0
+    normalized_numeric: Dict[str, float] = {}
+    numeric_closeness: Dict[str, float] = {}
+    if numeric_weight_sum > 0:
+        for label, close, weight, _ in provided_numeric:
+            normalized_weight = weight / numeric_weight_sum
+            normalized_numeric[label] = normalized_weight
+            numeric_closeness[label] = close
+            numeric_score += normalized_weight * close
 
     final_score = 0.60 * categorical_score + 0.40 * numeric_score
 
     reasons: List[str] = []
     genre_points = 0.60 * 0.55 * genre_match
     mood_points = 0.60 * 0.45 * mood_match
-    energy_points = 0.40 * 0.30 * energy_close
-    valence_points = 0.40 * 0.20 * valence_close
-    danceability_points = 0.40 * 0.20 * danceability_close
-    acousticness_points = 0.40 * 0.15 * acousticness_close
-    tempo_points = 0.40 * 0.15 * tempo_close
+    energy_points = 0.40 * normalized_numeric.get("energy", 0.0) * numeric_closeness.get("energy", 0.0)
+    valence_points = 0.40 * normalized_numeric.get("valence", 0.0) * numeric_closeness.get("valence", 0.0)
+    danceability_points = 0.40 * normalized_numeric.get("danceability", 0.0) * numeric_closeness.get("danceability", 0.0)
+    acousticness_points = 0.40 * normalized_numeric.get("acousticness", 0.0) * numeric_closeness.get("acousticness", 0.0)
+    tempo_points = 0.40 * normalized_numeric.get("tempo", 0.0) * numeric_closeness.get("tempo", 0.0)
 
     if genre_match:
         reasons.append(f"genre match (+{genre_points:.3f})")
     if mood_match:
         reasons.append(f"mood match (+{mood_points:.3f})")
-    if energy_close >= 0.70:
+    if numeric_closeness.get("energy", 0.0) >= 0.70:
         reasons.append(f"energy close to target (+{energy_points:.3f})")
-    if valence_close >= 0.70:
+    if numeric_closeness.get("valence", 0.0) >= 0.70:
         reasons.append(f"valence close to target (+{valence_points:.3f})")
-    if danceability_close >= 0.70:
+    if numeric_closeness.get("danceability", 0.0) >= 0.70:
         reasons.append(f"danceability close to target (+{danceability_points:.3f})")
-    if acousticness_close >= 0.70:
+    if numeric_closeness.get("acousticness", 0.0) >= 0.70:
         reasons.append(f"acousticness close to target (+{acousticness_points:.3f})")
-    if tempo_close >= 0.70:
+    if numeric_closeness.get("tempo", 0.0) >= 0.70:
         reasons.append(f"tempo close to target (+{tempo_points:.3f})")
     if not reasons:
         reasons.append("some feature overlap (+0.000)")
