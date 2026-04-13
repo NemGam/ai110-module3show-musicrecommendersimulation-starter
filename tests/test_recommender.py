@@ -1,4 +1,4 @@
-from src.recommender import Song, UserProfile, Recommender
+from src.recommender import Song, UserProfile, Recommender, recommend_songs
 
 def make_small_recommender() -> Recommender:
     songs = [
@@ -59,3 +59,121 @@ def test_explain_recommendation_returns_non_empty_string():
     explanation = rec.explain_recommendation(user, song)
     assert isinstance(explanation, str)
     assert explanation.strip() != ""
+
+
+def test_diversity_penalty_spreads_top_results_across_artists():
+    songs = [
+        {
+            "id": 1,
+            "title": "Anchor Pop",
+            "artist": "Artist A",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.80,
+            "tempo_bpm": 120.0,
+            "valence": 0.90,
+            "danceability": 0.82,
+            "acousticness": 0.18,
+        },
+        {
+            "id": 2,
+            "title": "Second Pop",
+            "artist": "Artist A",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.79,
+            "tempo_bpm": 119.0,
+            "valence": 0.88,
+            "danceability": 0.81,
+            "acousticness": 0.20,
+        },
+        {
+            "id": 3,
+            "title": "Fresh Voice",
+            "artist": "Artist B",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.77,
+            "tempo_bpm": 118.0,
+            "valence": 0.86,
+            "danceability": 0.79,
+            "acousticness": 0.22,
+        },
+    ]
+    user_prefs = {
+        "favorite_genres": ["pop"],
+        "favorite_moods": ["happy"],
+        "target_energy": 0.8,
+        "target_valence": 0.9,
+        "target_danceability": 0.82,
+        "target_acousticness": 0.18,
+        "target_tempo_bpm": 120,
+        "diversity_settings": {
+            "artist_penalty": 0.25,
+            "genre_penalty": 0.0,
+        },
+    }
+
+    results = recommend_songs(user_prefs, songs, k=3)
+
+    assert [song["title"] for song, _, _ in results[:2]] == ["Anchor Pop", "Fresh Voice"]
+    assert "repeated artist" in results[2][2]
+
+
+def test_diversity_penalty_can_prefer_new_genre_in_second_slot():
+    songs = [
+        {
+            "id": 1,
+            "title": "Top Pop",
+            "artist": "Artist A",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.80,
+            "tempo_bpm": 120.0,
+            "valence": 0.90,
+            "danceability": 0.82,
+            "acousticness": 0.18,
+        },
+        {
+            "id": 2,
+            "title": "Runner Up Pop",
+            "artist": "Artist B",
+            "genre": "pop",
+            "mood": "happy",
+            "energy": 0.79,
+            "tempo_bpm": 119.0,
+            "valence": 0.88,
+            "danceability": 0.81,
+            "acousticness": 0.20,
+        },
+        {
+            "id": 3,
+            "title": "Different Lane",
+            "artist": "Artist C",
+            "genre": "rock",
+            "mood": "happy",
+            "energy": 0.76,
+            "tempo_bpm": 118.0,
+            "valence": 0.86,
+            "danceability": 0.75,
+            "acousticness": 0.24,
+        },
+    ]
+    user_prefs = {
+        "favorite_genres": ["pop", "rock"],
+        "favorite_moods": ["happy"],
+        "target_energy": 0.8,
+        "target_valence": 0.9,
+        "target_danceability": 0.82,
+        "target_acousticness": 0.18,
+        "target_tempo_bpm": 120,
+        "diversity_settings": {
+            "artist_penalty": 0.0,
+            "genre_penalty": 0.20,
+        },
+    }
+
+    results = recommend_songs(user_prefs, songs, k=3)
+
+    assert [song["title"] for song, _, _ in results[:2]] == ["Top Pop", "Different Lane"]
+    assert "repeated genre" in results[2][2]

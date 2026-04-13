@@ -1,111 +1,137 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: Music Recommender Simulation
 
-## 1. Model Name  
+## 1. Model Name
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+SignalBlend Music Recommender
 
----
+## 2. Intended Use
 
-## 2. Intended Use  
+This recommender suggests a small set of songs from a classroom-sized catalog based on a user's stated taste profile. It is designed for explainable, content-based recommendation rather than production use. The system assumes the user can describe what they like in terms of genre, mood, era, listening context, and several measurable audio-style features.
 
-Describe what your recommender is designed to do and who it is for. 
+This project is for classroom exploration only. It is not trained on real listening histories and it should not be treated like a commercial music product.
 
-Prompts:  
+## 3. How the Model Works
 
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+Each song is represented by a combination of categorical and numeric features.
 
----
+Categorical features:
 
-## 3. How the Model Works  
+- `genre`
+- `mood`
+- `release_decade`
+- `listening_context`
+- `detailed_mood_tags`
 
-Explain your scoring approach in simple language.  
+Numeric features:
 
-Prompts:  
+- `energy`
+- `valence`
+- `danceability`
+- `acousticness`
+- `tempo_bpm`
+- `popularity_100`
+- `vocal_presence`
+- `instrumental_focus`
+- `replay_value`
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+The model first checks whether a song matches the user's favorite categories. Genre and mood still matter, but now the recommender can also reward songs from a preferred decade, songs that fit a preferred use case like `deep_work` or `night_drive`, and songs whose detailed mood tags overlap with the user's preferred emotional descriptors.
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+Then it measures how close the song's numeric values are to the user's target values. A song does not need to match perfectly. It gets more credit when it is close to the target on features such as energy, tempo, popularity, or vocal presence.
 
----
+Finally, the model blends the categorical score and the numeric score. The user can tune the category weights, feature weights, and the final blend between categorical and numeric matching.
 
-## 4. Data  
+Compared with the starter version, this model is richer in two ways:
 
-Describe the dataset the model uses.  
+- the dataset includes several new song attributes
+- the scoring logic can actively use those new attributes when the user profile provides them
 
-Prompts:  
+## 4. Data
 
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+The catalog contains 18 songs in `data/songs.csv`.
 
----
+Genres represented:
 
-## 5. Strengths  
+- pop
+- lofi
+- rock
+- ambient
+- jazz
+- synthwave
+- indie pop
+- hip hop
+- electronic
 
-Where does your system seem to work well  
+Base moods represented:
 
-Prompts:  
+- happy
+- chill
+- intense
+- relaxed
+- moody
+- focused
+- energetic
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+I kept the original 18-song catalog size but expanded each row with richer metadata. The added attributes are:
 
----
+- `popularity_100`
+- `release_decade`
+- `detailed_mood_tags`
+- `vocal_presence`
+- `instrumental_focus`
+- `listening_context`
+- `replay_value`
 
-## 6. Limitations and Bias 
+These additions make the dataset more expressive, but the catalog is still small. Many parts of musical taste are still missing, including lyrics, language, artist similarity, instrumentation details, cultural context, and real user behavior.
 
-Where the system struggles or behaves unfairly. 
+## 5. Strengths
 
-Prompts:  
+The system works best for users who can describe their taste in a structured way. It performs reasonably well when a user knows not only the genre they like, but also the kind of situation and emotional tone they want.
 
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+Examples of cases it handles better now:
 
----
+- distinguishing `night_drive` synthwave from `deep_work` lofi
+- separating broad mood labels from more detailed tags like `nostalgic`, `aggressive`, or `cinematic`
+- matching users who want a balance between vocal-heavy and instrumental tracks
+- filtering for songs that feel more mainstream or more niche using `popularity_100`
 
-## 7. Evaluation  
+The explanations are also better because the system can point to more specific reasons for a match.
 
-How you checked whether the recommender behaved as expected. 
+## 6. Limitations and Bias
 
-Prompts:  
+The biggest limitation is still the dataset size. With only 18 songs, the recommender cannot offer much diversity within each niche. Some genres appear only once or twice, so a strong preference can cause the system to repeat similar choices.
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
+Bias can also come from the hand-authored attributes:
 
-No need for numeric metrics unless you created some.
+- popularity values are synthetic, not measured from real listeners
+- mood tags are subjective and reflect the dataset creator's judgment
+- listening contexts like `study` or `workout` are simplified and may not generalize across people
+- decade labels are coarse and may overstate the importance of era
 
----
+The scoring can still overfit to whichever features receive the heaviest weights. For example, if genre and decade weights are too high, the system may ignore a better mood or tempo fit. If popularity is weighted too strongly, it may favor more mainstream-looking entries even when the user mainly cares about atmosphere.
 
-## 8. Future Work  
+## 7. Evaluation
 
-Ideas for how you would improve the model next.  
+I evaluated the recommender by trying profiles with different combinations of:
 
-Prompts:  
+- favorite genres and moods
+- preferred decades
+- preferred listening contexts
+- detailed mood tags
+- numeric targets such as energy, tempo, popularity, and vocal presence
 
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+I checked whether the top recommendations were explainable and whether the reasons matched the profile. I also verified that older profiles still work, meaning the system remains backward compatible if a user only provides genre, mood, and a few numeric targets.
 
----
+One useful comparison was between broad profiles and narrow profiles. Broad profiles produced more varied results, while narrow profiles often surfaced one small pocket of the dataset repeatedly. That behavior is expected for a content-based recommender with a small catalog.
 
-## 9. Personal Reflection  
+## 8. Future Work
 
-A few sentences about your experience.  
+- Add more songs so each genre, decade, and context has better coverage
+- Learn feature weights from user feedback instead of setting them by hand
+- Add diversity rules so the top results are less repetitive
+- Include artist similarity and lyrical themes
+- Support negative preferences such as moods or contexts the user wants to avoid
+- Use the added fields in the command-line interface so user input can control them directly
 
-Prompts:  
+## 9. Personal Reflection
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+Building this made it clearer that recommendation quality depends as much on representation as on scoring. A simple scoring function can become much more useful when the data captures richer aspects of taste. It also showed how quickly bias enters the system when labels like mood, popularity, or context are hand-assigned. Even in a small classroom project, the choice of features already shapes what kinds of listeners the model serves well and which tastes it flattens.
